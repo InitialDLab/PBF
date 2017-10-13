@@ -11,13 +11,14 @@ public class QueryProcess
 	public static void main(String[] args)
 	{
 		HashSet<String> set = new HashSet<String>();
-		String inputFileName = "d:/dataset/1011/edgar-query-86400";
-		String outputFileName = "d:/dataset/1011/edgar-query-14400";
+		String inputFileName = "d:/dataset/1013/wc_qry";
+		String outputFileName = "d:/dataset/1013/wc-qry-7d-new";
 		try
 		{
 			BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
 			FileWriter writer = new FileWriter(outputFileName, false);;
 			String tempStr = null;
+			int d = 6;
 			while ((tempStr = reader.readLine()) != null)
 			{
 				tempStr.trim();
@@ -26,6 +27,7 @@ public class QueryProcess
 				String startTime = null;
 				String endTime = null;
 				long firstTimestamp = -1;
+				long secondTimestamp = -1;
 				if (null == (startTime = tokenizer.nextToken()))
 				{
 					continue;
@@ -37,10 +39,11 @@ public class QueryProcess
 				else
 				{
 					firstTimestamp = Long.parseLong(startTime);
+					secondTimestamp = Long.parseLong(endTime);
 					// update the max timestamp T
-					if (firstTimestamp >= 14400 - 130)//if (timestamp >= 57600) 32768
+					if (firstTimestamp >= 86200)//14400 - 130)//if (timestamp >= 57600) 32768
 					{
-						break;
+						continue;
 					}
 //					else if (timestamp > 32768 - 130 && timestamp < 32768)
 //					{
@@ -48,8 +51,26 @@ public class QueryProcess
 //					}
 					else
 					{
-						writer.append(tempStr);
+//						writer.append(tempStr);
+//						writer.append("\r\n");
+//						writer.append(tempStr);
+//						writer.append("\r\n");
+						writer.append((firstTimestamp - 1) + " " + (secondTimestamp - 1));
 						writer.append("\r\n");
+						writer.append((firstTimestamp - 1) + " " + (secondTimestamp - 1));
+						writer.append("\r\n");
+						
+						if (firstTimestamp > 200 && firstTimestamp < 86200)
+						{
+							for (int i = 1; i <= d; i++)
+							{
+								writer.append((firstTimestamp - 1 + 86016 * i) + " " + (secondTimestamp - 1 + 86016 * i));
+								writer.append("\r\n");
+								writer.append((firstTimestamp - 1 + 86016 * i) + " " + (secondTimestamp - 1 + 86016 * i));
+								writer.append("\r\n");								
+							}
+						}
+						
 						set.add(tempStr);
 					}
 				}

@@ -61,6 +61,39 @@ public class PbfUtil
 		return optimizedM;
 	}
 	
+	public static int[] getOptimizedM(int m, int[] d, int[] f, int queryLength, double acc)
+	{
+		int[] optimizedM = null;
+		if (d.length != f.length)
+		{
+			// TODO
+		}
+		else
+		{
+			double absoluteAccuracy = 0;
+
+			absoluteAccuracy = acc; // 93 for beta1, 54 for beta2
+			optimizedM = new int[d.length];
+			LamdaFunction lamdaFunc = new LamdaFunction(m, d, f);
+			BisectionSolver solver = new BisectionSolver(absoluteAccuracy);
+			double lamda = solver.solve(40000, lamdaFunc, -1, 0);
+
+			for (int i = 0; i < optimizedM.length; i++)
+			{
+				if (f[i] == 0 || d[i] == 0)
+				{
+					optimizedM[i] = 0;
+				}
+				else
+				{
+					optimizedM[i] = (int) ((double) d[i] / INVARIANT
+							* Math.log(1.0D - (double) f[i] * PbfUtil.INVARIANT / lamda / d[i]));
+				}
+			}
+		}
+		return optimizedM;
+	}
+	
 	public static int[] getOptimizedMForBeta2(int m, int[] d, int[] f, int queryLength)
 	{
 		int[] optimizedM = null;

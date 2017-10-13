@@ -13,7 +13,10 @@ import edu.ecnu.pbf.CommonConstants;
 import edu.ecnu.pbf.sketch.fm.FlajoletMartin;
 import edu.ecnu.pbf.util.PbfUtil;
 
-public class Dataset
+/**
+ * for granularity
+ */
+public class DatasetG
 {
 //	private HashMap<String, ArrayList<Long>> dataset;  // size() = n'
 	private HashMap<String, TimepointSet> dataset;
@@ -30,7 +33,9 @@ public class Dataset
 	private int gLevel;
 	private int maxT;
 	
-	public Dataset()
+	private int granularity;
+	
+	public DatasetG()
 	{
 		this.dataset = new HashMap<String, TimepointSet>();
 		this.originalData = new HashSet<String>();
@@ -46,7 +51,7 @@ public class Dataset
 		this.levelNum = 0;
 	}
 	
-	public Dataset(int g)
+	public DatasetG(int g, int granularity)
 	{
 		this.dataset = new HashMap<String, TimepointSet>();
 		this.originalData = new HashSet<String>();
@@ -66,6 +71,8 @@ public class Dataset
 		{
 			this.gLevel++;
 		}
+		
+		this.granularity = granularity;
 	}
 	
 	/**
@@ -98,7 +105,7 @@ public class Dataset
 				}
 				else
 				{
-					timestamp = Long.parseLong(timestampStr);
+					timestamp = Long.parseLong(timestampStr) * granularity;
 					// update the max timestamp T
 					if (timestamp > this.maxTimestmap)
 					{
@@ -137,7 +144,7 @@ public class Dataset
 				}
 				else
 				{
-					timestamp = Long.parseLong(timestampStr);
+					timestamp = Long.parseLong(timestampStr) * granularity;
 				}
 				
 				if (originalData.contains(tempStr))
@@ -273,7 +280,7 @@ public class Dataset
 	public static void main(String[] args)
 	{
 		String fileName = "d:/dataset/nw_dat";
-		Dataset dataset = new Dataset(4);
+		DatasetG dataset = new DatasetG(4, 1);
 		dataset.loadFromFile(fileName);
 		System.out.println(dataset.getDataset().size());
 		System.out.println(dataset.size());

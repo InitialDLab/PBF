@@ -11,8 +11,9 @@ public class Network
 	public static void main(String[] args)
 	{
 		HashSet<String> set = new HashSet<String>();
-		String inputFileName = "d:/dataset/1011/nw_dat";
-		String outputFileName = "d:/dataset/1011/nw_dat_57600";  // 14400, 28800, 57600, 86400
+		String inputFileName = "d:/dataset/1013/network";
+		String outputFileName = "d:/dataset/1013/network-2d";  // 14400, 28800, 57600, 86400
+		int d = 2;
 		try
 		{
 			BufferedReader reader = new BufferedReader(new FileReader(inputFileName));

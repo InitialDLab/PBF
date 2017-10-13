@@ -171,7 +171,9 @@ public class Beta2 implements PersistentBloomFilter
 			int level = dyadicResult.get(i).getSecond();
 			if (null == rangeBloomFilter[level - 1])
 			{
-				continue;
+				// continue;
+				result = true;  // modified by jinwei (20171013)
+				break;
 			}
 			else if (rangeBloomFilter[level - 1].query(element, key))
 			{

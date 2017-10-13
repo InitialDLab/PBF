@@ -8,5 +8,5 @@ public class CommonConstants
 			1 << 27, 1 << 28, 1 << 29, 1 << 30 };
 	
 	public static final int K_MAX = 16;
-	public static final int MAX_LEVEL_NUM = 24;
+	public static final int MAX_LEVEL_NUM = 30;
 }
