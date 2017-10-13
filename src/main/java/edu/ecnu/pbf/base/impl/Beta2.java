@@ -61,6 +61,7 @@ public class Beta2 implements PersistentBloomFilter
 			if (bitNum[i] == 0)
 			{
 				rangeBloomFilter[i] = null;
+				
 			}
 			else
 			{

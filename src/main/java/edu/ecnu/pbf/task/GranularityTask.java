@@ -182,7 +182,7 @@ public class GranularityTask
 		int m = Integer.parseInt(args[1]);
 		int queryLength = Integer.parseInt(args[2]);
 		int g = 4;
-		int granularity = 1000;
+		int granularity = 100;
 		queryLength = queryLength * granularity;
 		
 		int mStart = 2000000;
@@ -201,35 +201,35 @@ public class GranularityTask
 //		GranularityTask fpTask = new GranularityTask(2, 50000000, 128, dataset, queryset, accuracy);
 //		fpTask.start();
 		
-//		System.out.println("========pbf-1==========");
-//		for (int i = 0; i < 16; i++)
-//		{
-//			int mMiddle = (mStart + mEnd) / 2;
-//			GranularityTask fpTask = new GranularityTask(1, mMiddle, queryLength, dataset, queryset, accuracy);
-//			fpTask.start();
-//			
-//			double fpRate = fpTask.getFPRate();
-//			System.out.println("false positive rate: " + fpRate);
-//			
-//			if (fpRate > 0.048 && fpRate < 0.052)
-//			{
-//				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
-//				System.out.println("false positive rate: " + fpRate);
-//				break;
-//			}
-//			else if (fpRate > 0.05)
-//			{
-//				mStart = mMiddle + 1;
-//			}
-//			else if (fpRate < 0.05)
-//			{
-//				mEnd = mMiddle - 1;
-//			}
-//			else
-//			{
-//				System.out.println("error!");
-//			}
-//		}
+		System.out.println("========pbf-1==========");
+		for (int i = 0; i < 16; i++)
+		{
+			int mMiddle = (mStart + mEnd) / 2;
+			GranularityTask fpTask = new GranularityTask(1, mMiddle, queryLength, dataset, queryset, accuracy);
+			fpTask.start();
+			
+			double fpRate = fpTask.getFPRate();
+			System.out.println("false positive rate: " + fpRate);
+			
+			if (fpRate > 0.048 && fpRate < 0.052)
+			{
+				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
+				System.out.println("false positive rate: " + fpRate);
+				break;
+			}
+			else if (fpRate > 0.05)
+			{
+				mStart = mMiddle + 1;
+			}
+			else if (fpRate < 0.05)
+			{
+				mEnd = mMiddle - 1;
+			}
+			else
+			{
+				System.out.println("error!");
+			}
+		}
 		
 		System.out.println("========pbf-2==========");
 		mStart = 2000000;

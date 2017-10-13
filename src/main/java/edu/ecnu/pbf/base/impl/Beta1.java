@@ -65,7 +65,7 @@ public class Beta1 implements PersistentBloomFilter
 		{
 			if (m[i] == 0)
 			{
-				bfArray.add(null);
+				bfArray.add(new BasicBloomFilter(1, 1));
 			}
 			else
 			{
@@ -186,7 +186,9 @@ public class Beta1 implements PersistentBloomFilter
 			BasicBloomFilter bf = bfArray.get(index - 1);
 			if (null == bf)
 			{
-				continue;
+				// continue;
+				result = true;
+				break;
 			}
 			else if (bf.query(element))
 			{
