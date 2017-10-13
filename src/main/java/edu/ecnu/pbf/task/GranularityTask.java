@@ -177,6 +177,7 @@ public class GranularityTask
 	{
 		// java -jar pbf.jar args[0] args[1] args[2] args[3] args[4] args[5]
 		// java -jar pbf.jar pbfType m queryLength dataFileName queryFileName accuracy
+		// 1 50000000 128 d:/dataset/1013/network d:/dataset/1013/wc-qry-86400-new 1E-10
 		int pbfType = Integer.parseInt(args[0]);
 		int m = Integer.parseInt(args[1]);
 		int queryLength = Integer.parseInt(args[2]);
