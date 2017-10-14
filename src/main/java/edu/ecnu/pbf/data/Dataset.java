@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.StringTokenizer;
 
 import edu.ecnu.pbf.CommonConstants;
-import edu.ecnu.pbf.sketch.fm.FlajoletMartin;
+import edu.ecnu.pbf.sketch.fm.HyperLogLog;
 import edu.ecnu.pbf.util.PbfUtil;
 
 public class Dataset
@@ -19,9 +19,9 @@ public class Dataset
 	private HashMap<String, TimepointSet> dataset;
 	private HashSet<String> originalData;  // size() = n
 	private ArrayList<HashSet<String>> levelSet;  // get(i).size() = di for beta2
-	private ArrayList<FlajoletMartin> levelSetSketch; // for beta-2
+	private ArrayList<HyperLogLog> levelSetSketch; // for beta-2
 	private ArrayList<HashSet<String>> bfArray; // get(i).size() = d(i-1) for beta1
-	private ArrayList<FlajoletMartin> bfArraySketch; // for beta1;
+	private ArrayList<HyperLogLog> bfArraySketch; // for beta1;
 	private int[] d; // di is the number of distinct elements in b(i-1) for beta1
 	private int[] dSketch; // for beta1
 	private int number;
@@ -35,11 +35,11 @@ public class Dataset
 		this.dataset = new HashMap<String, TimepointSet>();
 		this.originalData = new HashSet<String>();
 		this.levelSet = new ArrayList<HashSet<String>>();
-		this.levelSetSketch = new ArrayList<FlajoletMartin>();  // add
+		this.levelSetSketch = new ArrayList<HyperLogLog>();  // add
 		for (int i = 0; i < CommonConstants.MAX_LEVEL_NUM; i++)
 		{
 			levelSet.add(new HashSet<String>());
-			levelSetSketch.add(new FlajoletMartin(64, 32, 2));
+			levelSetSketch.add(HyperLogLog.builder().build());
 		}
 		this.number = 0;
 		this.maxTimestmap = 0;
@@ -51,11 +51,11 @@ public class Dataset
 		this.dataset = new HashMap<String, TimepointSet>();
 		this.originalData = new HashSet<String>();
 		this.levelSet = new ArrayList<HashSet<String>>();
-		this.levelSetSketch = new ArrayList<FlajoletMartin>();  // add 1013
+		this.levelSetSketch = new ArrayList<HyperLogLog>();  // add 1013
 		for (int i = 0; i < CommonConstants.MAX_LEVEL_NUM; i++)
 		{
 			levelSet.add(new HashSet<String>());
-			levelSetSketch.add(new FlajoletMartin(64, 32, 2));
+			levelSetSketch.add(HyperLogLog.builder().build());
 		}
 		this.number = 0;
 		this.maxTimestmap = 0;
@@ -111,12 +111,12 @@ public class Dataset
 			this.levelNum = PbfUtil.getLevelNum(maxTimestmap);
 			this.maxT = CommonConstants.g[levelNum - 1] - 1;
 			this.bfArray = new ArrayList<HashSet<String>>();
-//			this.bfArraySketch = new ArrayList<FlajoletMartin>();
+			this.bfArraySketch = new ArrayList<HyperLogLog>();
 			int bfArraySize = 1 << (levelNum - gLevel + 1);
 			for (int i = 0; i < bfArraySize; i++)
 			{
 				bfArray.add(new HashSet<String>());
-//				bfArraySketch.add(new FlajoletMartin(64, 32, 2));  // add by jinwei (20171013)
+				bfArraySketch.add(HyperLogLog.builder().build());  // add by jinwei (20171013)
 			}
 			reader = new BufferedReader(new FileReader(fileName));
 			while ((tempStr = reader.readLine()) != null)
@@ -170,11 +170,11 @@ public class Dataset
 			reader.close();
 			
 			d = new int[bfArraySize];
-//			dSketch = new int[bfArraySize];
+			dSketch = new int[bfArraySize];
 			for (int i = 0; i < d.length; i++)
 			{
 				d[i] = bfArray.get(i).size();
-//				dSketch[i] = (int)bfArraySketch.get(i).cardinality();
+				dSketch[i] = (int)bfArraySketch.get(i).count();
 			}
 		}
 		catch (FileNotFoundException e)
@@ -199,6 +199,7 @@ public class Dataset
 		{
 			String str = elementStr + (timestamp / CommonConstants.g[i]);
 			this.levelSet.get(i).add(str);
+			this.levelSetSketch.get(i).addString(str); // 1014
 		}
 	}
 	
@@ -216,6 +217,7 @@ public class Dataset
 		for (int i = 0; i < levelNum - gLevel + 1; i++)
 		{
 			bfArray.get(index).add(elementStr);
+			bfArraySketch.get(index).addString(elementStr);  // 1014
 			int mid = (start + end) / 2;
 			if (mid < timestamp)
 			{
@@ -229,6 +231,8 @@ public class Dataset
 			}
 		}
 		bfArray.get(0).add(elementStr + timestamp);
+		bfArraySketch.get(0).addString(elementStr + timestamp);
+		
 	}
 	
 	public HashMap<String, TimepointSet> getDataset()
@@ -256,9 +260,19 @@ public class Dataset
 		return levelSet;
 	}
 	
+	public ArrayList<HyperLogLog> getLevelSetSketch()
+	{
+		return levelSetSketch;
+	}
+	
 	public int[] getD()
 	{
 		return d;
+	}
+	
+	public int[] getDSketch()
+	{
+		return dSketch;
 	}
 
 	/**

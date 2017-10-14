@@ -14,6 +14,7 @@ import edu.ecnu.pbf.data.DatasetG;
 import edu.ecnu.pbf.data.QuerySet;
 import edu.ecnu.pbf.data.QuerySetG;
 import edu.ecnu.pbf.data.TimepointSet;
+import edu.ecnu.pbf.sketch.fm.HyperLogLog;
 import edu.ecnu.pbf.util.OptimizationUtil;
 import edu.ecnu.pbf.util.PbfUtil;
 import edu.ecnu.pbf.util.RandomGenerator;
@@ -57,7 +58,7 @@ public class GranularityTask
 
 	public void start()
 	{
-		System.out.println("========new========");
+//		System.out.println("========new========");
 
 		// get metadata
 		long N = dataset.size();
@@ -71,7 +72,7 @@ public class GranularityTask
 		PersistentBloomFilter pbf = null;
 		int levelNum = dataset.getLevelNum();
 		
-		System.out.println("number of levels: " + levelNum);
+//		System.out.println("number of levels: " + levelNum);
 		
 		if (0 == pbfType)
 		{
@@ -91,7 +92,7 @@ public class GranularityTask
 			{
 				sumBits += mm[i];
 			}
-			System.out.println("bits: " + sumBits);
+//			System.out.println("bits: " + sumBits);
 		}
 		else if (2 == pbfType)
 		{
@@ -116,8 +117,52 @@ public class GranularityTask
 			{
 				sumBits += mm[i];
 			}
-			System.out.println("bits: " + sumBits);
+//			System.out.println("bits: " + sumBits);
 			
+		}
+		else if (3 == pbfType)
+		{
+			// beta-1-online
+			int[] mm = PbfUtil.getOptimizedM(this.m, dataset.getDSketch(),
+					querySet.getQueryFrequencyEstimate(), queryLength, accuracy);
+			int[] k = PbfUtil.getOptimizedKForBeta1(mm, dataset.getD(), CommonConstants.K_MAX);
+			pbf = new Beta1(mm, k, levelNum, 4);
+
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+//			System.out.println("beta-1-online, bits: " + sumBits);
+		}
+		else if (4 == pbfType)
+		{
+			// beta-2-online
+			// get the number of distinct elements for each level
+			int topLevel = levelNum - 1;
+			ArrayList<HyperLogLog> levelSetSketch = dataset.getLevelSetSketch();
+			int[] d = new int[levelNum];
+			for (int i = 0; i < levelNum; i++)
+			{
+				d[i] = (int)levelSetSketch.get(i).count();
+			}
+
+			int[] mm = PbfUtil.getOptimizedM(this.m, d,
+					querySet.getQueryFrequencyEstimateForBeta2(), queryLength, accuracy);
+			int[] k = PbfUtil.getOptimizedKForBeta1(mm, d, CommonConstants.K_MAX);
+
+			pbf = new Beta2(mm, k, topLevel);
+			// System.out.println(time);
+
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+//			System.out.println("beta-2-online, bits: " + sumBits);
+		}
+		else
+		{
+			System.out.println("pbf type error!");
+			return;
 		}
 		
 		if (Math.abs(sumBits - m) / m > 0.1)
@@ -147,7 +192,7 @@ public class GranularityTask
 		// query
 		ArrayList<Long> starttimeSet = querySet.getStarttimeSet();
 		ArrayList<String> elements = new ArrayList<String>();
-		for (int i = 0; i < 1000; i++)
+		for (int i = 0; i < 10000; i++)
 		{
 			String str = RandomGenerator.getRandomString(20);
 			elements.add(str);
@@ -175,33 +220,33 @@ public class GranularityTask
 	
 	public static void main(String[] args)
 	{
-		// java -jar pbf.jar args[0] args[1] args[2] args[3] args[4] args[5]
-		// java -jar pbf.jar pbfType m queryLength dataFileName queryFileName accuracy
+		// java -jar pbf.jar args[0] args[1] args[2] args[3] args[4] args[5] args[6]
+		// java -jar pbf.jar pbfType queryLength dataFileName queryFileName accuracy  granularity granularityForQuery
 		// 1 50000000 128 d:/dataset/1013/network d:/dataset/1013/wc-qry-86400-new 1E-10
 		int pbfType = Integer.parseInt(args[0]);
-		int m = Integer.parseInt(args[1]);
-		int queryLength = Integer.parseInt(args[2]);
+		int queryLength = Integer.parseInt(args[1]);
 		int g = 4;
-		int granularity = 100;
-		queryLength = queryLength * granularity;
+		int granularity = Integer.parseInt(args[5]);//100; //1000;
+		int granularityForQuery = Integer.parseInt(args[6]);//144; //864;
+		queryLength = queryLength * granularityForQuery;
 		
-		int mStart = 2000000;
-		int mEnd = 60000000;
+		int mStart = 4000000;
+		int mEnd = 90000000;
 		
-		String dataFileName = args[3];
+		String dataFileName = args[2];
 		DatasetG dataset = new DatasetG(g, granularity);
 		dataset.loadFromFile(dataFileName);
 
-		String queryFileName = args[4];
-		QuerySetG queryset = new QuerySetG(dataset.getLevelNum(), g, queryLength, granularity);
+		String queryFileName = args[3];
+		QuerySetG queryset = new QuerySetG(dataset.getLevelNum(), g, queryLength, granularityForQuery);
 		queryset.loadQueryFromFile(queryFileName);
 		
-		double accuracy = Double.parseDouble(args[5]);
+		double accuracy = Double.parseDouble(args[4]);
 		
 //		GranularityTask fpTask = new GranularityTask(2, 50000000, 128, dataset, queryset, accuracy);
 //		fpTask.start();
-		
-		System.out.println("========pbf-1==========");
+		/*
+		System.out.println("========pbf-1-opt==========");
 		for (int i = 0; i < 16; i++)
 		{
 			int mMiddle = (mStart + mEnd) / 2;
@@ -209,9 +254,9 @@ public class GranularityTask
 			fpTask.start();
 			
 			double fpRate = fpTask.getFPRate();
-			System.out.println("false positive rate: " + fpRate);
+//			System.out.println("false positive rate: " + fpRate);
 			
-			if (fpRate > 0.048 && fpRate < 0.052)
+			if (fpRate > 0.0491 && fpRate < 0.0509)
 			{
 				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
 				System.out.println("false positive rate: " + fpRate);
@@ -231,9 +276,9 @@ public class GranularityTask
 			}
 		}
 		
-		System.out.println("========pbf-2==========");
-		mStart = 2000000;
-		mEnd = 60000000;
+		System.out.println("========pbf-2-opt==========");
+		mStart = 4000000;
+		mEnd = 90000000;
 		for (int i = 0; i < 16; i++)
 		{
 			int mMiddle = (mStart + mEnd) / 2;
@@ -241,9 +286,41 @@ public class GranularityTask
 			fpTask.start();
 			
 			double fpRate = fpTask.getFPRate();
-			System.out.println("false positive rate: " + fpRate);
+//			System.out.println("false positive rate: " + fpRate);
 			
-			if (fpRate > 0.048 && fpRate < 0.052)
+			if (fpRate > 0.0491 && fpRate < 0.0509)
+			{
+				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
+				System.out.println("false positive rate: " + fpRate);
+				break;
+			}
+			else if (fpRate > 0.05)
+			{
+				mStart = mMiddle + 1;
+			}
+			else if (fpRate < 0.05)
+			{
+				mEnd = mMiddle - 1;
+			}
+			else
+			{
+				System.out.println("error!");
+			}
+		}*/
+		
+		System.out.println("========pbf-1-online==========");
+		mStart = 4000000;
+		mEnd = 90000000;
+		for (int i = 0; i < 16; i++)
+		{
+			int mMiddle = (mStart + mEnd) / 2;
+			GranularityTask fpTask = new GranularityTask(3, mMiddle, queryLength, dataset, queryset, accuracy);
+			fpTask.start();
+			
+			double fpRate = fpTask.getFPRate();
+//			System.out.println("false positive rate: " + fpRate);
+			
+			if (fpRate > 0.0491 && fpRate < 0.0509)
 			{
 				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
 				System.out.println("false positive rate: " + fpRate);
@@ -262,6 +339,38 @@ public class GranularityTask
 				System.out.println("error!");
 			}
 		}
+		/*
+		System.out.println("========pbf-2-online==========");
+		mStart = 4000000;
+		mEnd = 90000000;
+		for (int i = 0; i < 16; i++)
+		{
+			int mMiddle = (mStart + mEnd) / 2;
+			GranularityTask fpTask = new GranularityTask(4, mMiddle, queryLength, dataset, queryset, accuracy);
+			fpTask.start();
+			
+			double fpRate = fpTask.getFPRate();
+//			System.out.println("false positive rate: " + fpRate);
+			
+			if (fpRate > 0.0491 && fpRate < 0.0509)
+			{
+				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
+				System.out.println("false positive rate: " + fpRate);
+				break;
+			}
+			else if (fpRate > 0.05)
+			{
+				mStart = mMiddle + 1;
+			}
+			else if (fpRate < 0.05)
+			{
+				mEnd = mMiddle - 1;
+			}
+			else
+			{
+				System.out.println("error!");
+			}
+		}*/
 			
 	}
 }

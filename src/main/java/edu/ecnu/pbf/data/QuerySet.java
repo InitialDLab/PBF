@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import edu.ecnu.pbf.CommonConstants;
+import edu.ecnu.pbf.sketch.cm.CountMinSketch;
 import edu.ecnu.pbf.util.BinaryUtil2;
 import edu.ecnu.pbf.util.RandomGenerator;
 
@@ -17,7 +18,9 @@ public class QuerySet
 	private ArrayList<Long> starttimeSet;
 	private int levelNum;
 	private int[] queryFrequency;  // for beta1, queryFrequency[0] is the number of queries for b0.
+	private CountMinSketch cmForBete1; // estimate query frequency for beta1
 	private int[] queryFrequencyForBeta2;
+	private CountMinSketch cmForBeta2; // estimate query frequency for beta2 
 	private int queryLength;
 	private int size;
 	private int gLevel;
@@ -54,6 +57,9 @@ public class QuerySet
 		}
 		this.queryLength = queryLength;
 		this.size = 0;
+		
+		cmForBete1 = CountMinSketch.create(6, 10000, 0);// 1014  //10 40000
+		cmForBeta2 = CountMinSketch.create(6, 10000, 0);
 	}
 
 	/**
@@ -104,6 +110,7 @@ public class QuerySet
 						System.out.println(queryFrequency.length);
 					}
 					queryFrequency[indexes.get(i)]++;
+					cmForBete1.addLong(indexes.get(i));
 				}
 				//queryFrequency[0]++;  // 0713 test
 
@@ -113,6 +120,7 @@ public class QuerySet
 				for (int i = 0; i < levels.size(); i++)
 				{
 					queryFrequencyForBeta2[(levels.get(i) - 1)]++;
+					cmForBeta2.addLong((levels.get(i) - 1));
 				}
 				
 				size++;
@@ -157,6 +165,39 @@ public class QuerySet
 	public int[] getQueryFrequencyForBeta2()
 	{
 		return queryFrequencyForBeta2;
+	}
+	
+	
+	/**
+	 * 1014
+	 * @return
+	 */
+	public int[] getQueryFrequencyEstimate()
+	{
+		int[] estimate = new int[1 << (levelNum - gLevel + 1)];
+		
+		for (int i = 0; i < estimate.length; i++)
+		{
+			estimate[i] = (int)cmForBete1.estimateCount(i);
+		}
+		
+		return estimate;
+	}
+	
+	/**
+	 * 1014
+	 * @return
+	 */
+	public int[] getQueryFrequencyEstimateForBeta2()
+	{
+		int[] queryFrequencyEstimateForBeta2 = new int[levelNum];
+		
+		for (int i = 0; i < levelNum; i++)
+		{
+			queryFrequencyEstimateForBeta2[i] = (int)cmForBeta2.estimateCount(i);
+		}
+		
+		return queryFrequencyEstimateForBeta2;
 	}
 
 	/**

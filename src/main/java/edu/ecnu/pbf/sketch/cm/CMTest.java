@@ -4,8 +4,8 @@ public class CMTest
 {
 	public static void main(String[] args)
 	{
-		int depth = 10;
-		int width = 1000000;
+		int depth = 12;
+		int width = 20000;
 		int seed = 0;
 		CountMinSketchImpl cm = new CountMinSketchImpl(depth, width, seed);
 		
@@ -13,7 +13,7 @@ public class CMTest
 		{
 			for (int j = 0; j < 10; j++)
 			{
-				cm.add(i);				
+				cm.addLong(i);				
 			}
 		}
 		

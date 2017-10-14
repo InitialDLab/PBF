@@ -13,6 +13,7 @@ import edu.ecnu.pbf.base.impl.Beta2;
 import edu.ecnu.pbf.data.Dataset;
 import edu.ecnu.pbf.data.QuerySet;
 import edu.ecnu.pbf.data.TimepointSet;
+import edu.ecnu.pbf.sketch.fm.HyperLogLog;
 import edu.ecnu.pbf.util.OptimizationUtil;
 import edu.ecnu.pbf.util.PbfUtil;
 import edu.ecnu.pbf.util.RandomGenerator;
@@ -86,7 +87,7 @@ public class UpperTTask
 			{
 				sumBits += mm[i];
 			}
-			System.out.println("bits: " + sumBits);
+			System.out.println("beta-1-opt, bits: " + sumBits);
 		}
 		else if (2 == pbfType)
 		{
@@ -111,10 +112,54 @@ public class UpperTTask
 			{
 				sumBits += mm[i];
 			}
-			System.out.println("bits: " + sumBits);
+			System.out.println("beta-2-opt, bits: " + sumBits);
+		}
+		else if (3 == pbfType)
+		{
+			// beta-1-online
+			int[] mm = PbfUtil.getOptimizedM(this.m, dataset.getDSketch(),
+					querySet.getQueryFrequencyEstimate(), queryLength, accuracy);
+			int[] k = PbfUtil.getOptimizedKForBeta1(mm, dataset.getD(), CommonConstants.K_MAX);
+			pbf = new Beta1(mm, k, levelNum, 4);
+
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+			System.out.println("beta-1-online, bits: " + sumBits);
+		}
+		else if (4 == pbfType)
+		{
+			// beta-2-online
+			// get the number of distinct elements for each level
+			int topLevel = levelNum - 1;
+			ArrayList<HyperLogLog> levelSetSketch = dataset.getLevelSetSketch();
+			int[] d = new int[levelNum];
+			for (int i = 0; i < levelNum; i++)
+			{
+				d[i] = (int)levelSetSketch.get(i).count();
+			}
+
+			int[] mm = PbfUtil.getOptimizedM(this.m, d,
+					querySet.getQueryFrequencyEstimateForBeta2(), queryLength, accuracy);
+			int[] k = PbfUtil.getOptimizedKForBeta1(mm, d, CommonConstants.K_MAX);
+
+			pbf = new Beta2(mm, k, topLevel);
+			// System.out.println(time);
+
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+			System.out.println("beta-2-online, bits: " + sumBits);
+		}
+		else
+		{
+			System.out.println("pbf type error!");
+			return;
 		}
 		
-		if (Math.abs(sumBits - m) / m > 0.1)
+		if ((double)Math.abs(sumBits - m) / m > 0.1)
 		{
 			System.out.println("error! sumBits: " + sumBits + ", m: " + m);
 			return;
@@ -189,7 +234,7 @@ public class UpperTTask
 		
 //		UpperTTask fpTask = new UpperTTask(pbfType, m, queryLength, dataset, queryset, accuracy);
 //		fpTask.start();
-		
+		/*
 		System.out.println("========pbf-1==========");
 		for (int i = 0; i < 16; i++)
 		{
@@ -251,6 +296,72 @@ public class UpperTTask
 			{
 				System.out.println("error!");
 			}
+		}*/
+		
+		System.out.println("========pbf-1-online==========");
+		mStart = 2000000;
+		mEnd = 200000000;
+		
+		for (int i = 0; i < 16; i++)
+		{
+			int mMiddle = (mStart + mEnd) / 2;
+			UpperTTask fpTask = new UpperTTask(3, mMiddle, queryLength, dataset, queryset, accuracy);
+			fpTask.start();
+			
+			double fpRate = fpTask.getFPRate();
+			System.out.println("false positive rate: " + fpRate);
+			
+			if (fpRate > 0.0488 && fpRate < 0.0512)
+			{
+				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
+				System.out.println("false positive rate: " + fpRate);
+				break;
+			}
+			else if (fpRate > 0.05)
+			{
+				mStart = mMiddle + 1;
+			}
+			else if (fpRate < 0.05)
+			{
+				mEnd = mMiddle - 1;
+			}
+			else
+			{
+				System.out.println("error!");
+			}
 		}
+		/*
+		System.out.println("========pbf-2-online==========");
+		mStart = 2000000;
+		mEnd = 100000000;
+		
+		for (int i = 0; i < 16; i++)
+		{
+			int mMiddle = (mStart + mEnd) / 2;
+			UpperTTask fpTask = new UpperTTask(4, mMiddle, queryLength, dataset, queryset, accuracy);
+			fpTask.start();
+			
+			double fpRate = fpTask.getFPRate();
+			System.out.println("false positive rate: " + fpRate);
+			
+			if (fpRate > 0.0488 && fpRate < 0.0512)
+			{
+				System.out.println("sum of bits: " + fpTask.getSumBits() + ", m: " + mMiddle);
+				System.out.println("false positive rate: " + fpRate);
+				break;
+			}
+			else if (fpRate > 0.05)
+			{
+				mStart = mMiddle + 1;
+			}
+			else if (fpRate < 0.05)
+			{
+				mEnd = mMiddle - 1;
+			}
+			else
+			{
+				System.out.println("error!");
+			}
+		}*/
 	}
 }

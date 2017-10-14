@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import edu.ecnu.pbf.CommonConstants;
+import edu.ecnu.pbf.sketch.cm.CountMinSketch;
 import edu.ecnu.pbf.util.BinaryUtil2;
 import edu.ecnu.pbf.util.RandomGenerator;
 
@@ -22,7 +23,11 @@ public class QuerySetG
 	private ArrayList<Long> starttimeSet;
 	private int levelNum;
 	private int[] queryFrequency;  // for beta1, queryFrequency[0] is the number of queries for b0.
+	//private int[] queryFrequencyEstimate;  // for beta1
+	private CountMinSketch cmForBete1; // estimate query frequency for beta1
 	private int[] queryFrequencyForBeta2;
+	//private int[] queryFrequencyEstimateForBeta2;  // for beta2
+	private CountMinSketch cmForBeta2; // estimate query frequency for beta2 
 	private int queryLength;
 	private int size;
 	private int gLevel;
@@ -49,20 +54,27 @@ public class QuerySetG
 		}
 		// for beta1
 		this.queryFrequency = new int[1 << (levelNum - gLevel + 1)];
+		//this.queryFrequencyEstimate = new int[1 << (levelNum - gLevel + 1)];  // 1014
 		for (int i = 0; i < queryFrequency.length; i++)
 		{
 			this.queryFrequency[i] = 0;
+			//this.queryFrequencyEstimate[i] = 0;
 		}
 		// for beta2
 		this.queryFrequencyForBeta2 = new int[levelNum];
+		//this.queryFrequencyEstimateForBeta2 = new int[levelNum];
 		for (int i = 0; i < levelNum; i++)
 		{
 			this.queryFrequencyForBeta2[i] = 0;
+			//this.queryFrequencyEstimateForBeta2[i] = 0;
 		}
 		this.queryLength = queryLength;
 		this.size = 0;
 		
 		this.granularity = granularity;
+		
+		cmForBete1 = CountMinSketch.create(4, 10000, 0);// 1014
+		cmForBeta2 = CountMinSketch.create(4, 10000, 0);
 	}
 
 	/**
@@ -113,6 +125,7 @@ public class QuerySetG
 						System.out.println(queryFrequency.length);
 					}
 					queryFrequency[indexes.get(i)]++;
+					cmForBete1.addLong(indexes.get(i));  // 1014
 				}
 				//queryFrequency[0]++;  // 0713 test
 
@@ -122,6 +135,7 @@ public class QuerySetG
 				for (int i = 0; i < levels.size(); i++)
 				{
 					queryFrequencyForBeta2[(levels.get(i) - 1)]++;
+					cmForBeta2.addLong((levels.get(i) - 1));  // 1014
 				}
 				
 				size++;
@@ -167,6 +181,40 @@ public class QuerySetG
 	{
 		return queryFrequencyForBeta2;
 	}
+	
+	
+	/**
+	 * 1014
+	 * @return
+	 */
+	public int[] getQueryFrequencyEstimate()
+	{
+		int[] estimate = new int[1 << (levelNum - gLevel + 1)];
+		
+		for (int i = 0; i < estimate.length; i++)
+		{
+			estimate[i] = (int)cmForBete1.estimateCount(i);
+		}
+		
+		return estimate;
+	}
+	
+	/**
+	 * 1014
+	 * @return
+	 */
+	public int[] getQueryFrequencyEstimateForBeta2()
+	{
+		int[] queryFrequencyEstimateForBeta2 = new int[levelNum];
+		
+		for (int i = 0; i < levelNum; i++)
+		{
+			queryFrequencyEstimateForBeta2[i] = (int)cmForBeta2.estimateCount(i);
+		}
+		
+		return queryFrequencyEstimateForBeta2;
+	}
+	
 
 	/**
 	 * Get the indexes of Basic BFs which need to be inserted.
