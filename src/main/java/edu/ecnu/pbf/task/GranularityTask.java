@@ -206,7 +206,7 @@ public class GranularityTask
 			byte[] elementByte = elements.get(i % elements.size()).getBytes();
 			// the start point in query set is 1, so we has to modify it
 			// only for wc_qry
-			if (pbf.query(elementByte, starttime, starttime + queryLength - 1))
+			if (pbf.query(elementByte, starttime + 4, starttime + queryLength + 3))
 			{
 				this.falseNum++;
 			}
@@ -245,7 +245,7 @@ public class GranularityTask
 		
 //		GranularityTask fpTask = new GranularityTask(2, 50000000, 128, dataset, queryset, accuracy);
 //		fpTask.start();
-		/*
+		
 		System.out.println("========pbf-1-opt==========");
 		for (int i = 0; i < 16; i++)
 		{
@@ -306,8 +306,8 @@ public class GranularityTask
 			{
 				System.out.println("error!");
 			}
-		}*/
-		
+		}
+		/*
 		System.out.println("========pbf-1-online==========");
 		mStart = 4000000;
 		mEnd = 90000000;
@@ -338,7 +338,7 @@ public class GranularityTask
 			{
 				System.out.println("error!");
 			}
-		}
+		}*/
 		/*
 		System.out.println("========pbf-2-online==========");
 		mStart = 4000000;

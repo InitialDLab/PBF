@@ -281,7 +281,8 @@ public class Beta1 implements PersistentBloomFilter
 	public static void main(String[] args)
 	{
 		byte[] element = "guo".getBytes();
-		Beta1 b1 = new Beta1(100000, 4, 1);
+//		int levelNum = Beta1.getLevelNum(86399);
+		Beta1 b1 = new Beta1(10000, 4, 1);
 		b1.insert(element, 4);
 
 		System.out.println(b1.query(element, 2, 5));
@@ -295,6 +296,8 @@ public class Beta1 implements PersistentBloomFilter
 		{
 			System.out.println(list.get(i));
 		}
+		
+		System.out.println(b1.getBinaryDecomposition(0, 0));
 	}
 
 }

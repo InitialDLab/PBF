@@ -13,6 +13,7 @@ import edu.ecnu.pbf.data.QuerySet;
 import edu.ecnu.pbf.data.TemporalElement;
 import edu.ecnu.pbf.util.MathUtil;
 import edu.ecnu.pbf.util.PbfUtil;
+import edu.ecnu.pbf.util.RandomGenerator;
 import edu.ecnu.pbf.util.ResultUtil;
 
 /**
@@ -28,7 +29,7 @@ import edu.ecnu.pbf.util.ResultUtil;
  * @author Jinwei
  *
  */
-public class MixTask
+public class QueryTask10152
 {
 	private int pbfType; // beta0, beta1, beta2, beta-1-online, beta-2-online
 	private int m;
@@ -45,7 +46,7 @@ public class MixTask
 	private Dataset2 dataset;
 	private QuerySet querySet;
 
-	public MixTask(int pbfType, int m, int queryLength, int readRatio, Dataset2 dataset, QuerySet querySet)
+	public QueryTask10152(int pbfType, int m, int queryLength, int readRatio, Dataset2 dataset, QuerySet querySet)
 	{
 		this.pbfType = pbfType;
 		this.m = m;
@@ -94,6 +95,14 @@ public class MixTask
 					querySet.getQueryFrequency(), queryLength);
 			int[] k = PbfUtil.getOptimizedKForBeta1(mm, dataset.getD(), CommonConstants.K_MAX);
 			pbf = new Beta1(mm, k, levelNum, 4);
+			
+			int sumBits = 0;
+			
+//			for (int i = 0; i < mm.length; i++)
+//			{
+//				sumBits += mm[i];
+//			}
+//			System.out.println("beta-2-opt, bits: " + sumBits);
 		}
 		else if (4 == pbfType)
 		{
@@ -111,105 +120,54 @@ public class MixTask
 			int[] k = PbfUtil.getOptimizedKForBeta1(mm, d, CommonConstants.K_MAX);
 
 			pbf = new Beta2(mm, k, topLevel);
+			
+//			int sumBits = 0;
+//			for (int i = 0; i < mm.length; i++)
+//			{
+//				sumBits += mm[i];
+//			}
+//			System.out.println("beta-2-opt, bits: " + sumBits);
 		}
 		else
 		{
 			return;
 		}
 		
-		int totalNum = 1000000; // total number of operations
+		int totalNum = 300000; // total number of operations
 		
-		if (readRatio < 0)
+		ArrayList<TemporalElement> ds = dataset.getDataset();
+		for (int j = 0; j < ds.size(); j++)
 		{
-			ArrayList<TemporalElement> ds = dataset.getDataset();
-			long start = System.nanoTime();
-			for (int i = 0; i < totalNum; i++)
-			{
-				TemporalElement e = ds.get(i % ds.size());
-				pbf.insert(e.getElement(), e.getTimepoint());
-				this.insertNum++;
-			}
-			long end = System.nanoTime();
-			rps = (double)(insertNum + queryNum) * 1000 * 1000 * 1000 / (end - start);
+			TemporalElement e = ds.get(insertNum % ds.size());
+			pbf.insert(e.getElement(), e.getTimepoint());
 		}
-		else if (readRatio > 100)
+		
+		ArrayList<Long> starttimeSet = querySet.getStarttimeSet();
+		ArrayList<byte[]> elementArray = new ArrayList<byte[]>();
+		String str = "guojinweishihaoren!!";
+		byte[] elementBytes = str.getBytes();
+		long start = System.nanoTime();
+		for (int i = 0; i < totalNum; i++)
 		{
-			ArrayList<Long> starttimeSet = querySet.getStarttimeSet();
-			String str = "guojinweishihaoren!!";
-			byte[] elementBytes = str.getBytes();
-			long start = System.nanoTime();
-			for (int i = 0; i < totalNum; i++)
+			long starttime = starttimeSet.get(i % starttimeSet.size());
+			// the start point in query set is 1, so we has to modify it
+			if (pbf.query(elementBytes, starttime, starttime + queryLength - 1))
 			{
-				long starttime = starttimeSet.get(i % starttimeSet.size());
-				// the start point in query set is 1, so we has to modify it
-				if (pbf.query(elementBytes, starttime, starttime + queryLength - 1))
-				{
-					this.falseNum++;
-				}
-				this.queryNum++;
+				this.falseNum++;
+				System.out.println("start: " + starttime + ", end: " + (starttime + queryLength - 1));
 			}
-			long end = System.nanoTime();
-			rps = (double)(insertNum + queryNum) * 1000 * 1000 * 1000 / (end - start);
+			this.queryNum++;
 		}
-		else
+		long end = System.nanoTime();
+		
+		double queryTime = (double) (end - start) / 1000 / totalNum;
+		
+		result = queryTime;
+		
+		if (falseNum > 10)
 		{
-			int i = 0;
-			int read = readRatio;
-			int write = 100 - readRatio;
-//			if (0 == read)
-//			{
-//				read = 1;
-//			}
-//			if (0 == write)
-//			{
-//				write = 1;
-//			}
-			int divisor = MathUtil.gcd(read, write);
-			read = read / divisor;
-			write = write / divisor;
-			
-			ArrayList<TemporalElement> ds = dataset.getDataset();
-			ArrayList<Long> starttimeSet = querySet.getStarttimeSet();
-			
-			// the next loop for warm-up
-			for (int j = 0; j < ds.size(); j++)
-			{
-				TemporalElement e = ds.get(insertNum % ds.size());
-				pbf.insert(e.getElement(), e.getTimepoint());
-			}
-			
-			String str = "guojinweishihaoren!!";
-			byte[] elementBytes = str.getBytes();
-			
-			long start = System.nanoTime();
-			while(i < totalNum)
-			{
-				for (int j = 0; j < write; j++)
-				{
-					TemporalElement e = ds.get(insertNum % ds.size());
-					pbf.insert(e.getElement(), e.getTimepoint());
-					insertNum++;
-					i++;	
-				}
-				
-				for (int j = 0; j < read; j++)
-				{
-					long starttime = starttimeSet.get(queryNum % starttimeSet.size());
-					// the start point in query set is 1, so we has to modify it
-					if (pbf.query(elementBytes, starttime, starttime + queryLength - 1))
-					{
-						this.falseNum++;
-					}
-					this.queryNum++;
-					i++;
-				}
-			}
-			long end = System.nanoTime();
-			
-			rps = (double)(insertNum + queryNum) * 1000 * 1000 * 1000 / (end - start);
+			System.out.println("false positive num! " + falseNum);
 		}
-
-		result = rps;
 
 	}
 
@@ -225,6 +183,7 @@ public class MixTask
 		int m = 50000000;
 		int[] maxTArray = { 7200, 14400, 28800, 57600, 86400 };
 		int queryLength = 128;
+		int[] queryL = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
 		int[] readRatio = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 		//int[] readRatio = {0, 10, 80, 90, 100};
 		//int[] readRatio = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100};
@@ -234,28 +193,30 @@ public class MixTask
 		Dataset2 dataset = new Dataset2(g);
 		dataset.loadFromFile(dataFileName);
 
-		String queryFileName = "d:/dataset/1013/wc-qry-100000-new";
-		QuerySet querySet = new QuerySet(dataset.getLevelNum(), g, queryLength);
-		querySet.loadQueryFromFile(queryFileName);
-
 		System.out.println("===========beta-0, beta-1, beta-2===========");
-		/*
-		for (int k = 0; k < readRatio.length; k++)
+		
+		for (int k = 0; k < queryL.length; k++)
 		{
-			System.out.print(readRatio[k]);
+			String queryFileName = "d:/dataset/1013/wc-qry-100000-new";
+			QuerySet querySet = new QuerySet(dataset.getLevelNum(), g, queryL[k]);
+			querySet.loadQueryFromFile(queryFileName);
+			
+			System.out.print(queryL[k]);
+			ArrayList<Double> resultArray = null;
+			double result = 0;
 			//============beta-0==============//
-			ArrayList<Double> resultArray = new ArrayList<Double>();
-			for (int j = 0; j < 9; j++)
-			{
-
-				MixTask qtask = new MixTask(0, m, queryLength, readRatio[k], dataset, querySet);
-				qtask.start();
-				resultArray.add(qtask.getResult());
-			}
-
-			double result = ResultUtil.handleResult(resultArray, 2, 3);
-
-			System.out.print("  " + ResultUtil.handleDouble(result, 4));
+//			resultArray = new ArrayList<Double>();
+//			for (int j = 0; j < 9; j++)
+//			{
+//
+//				QueryTask10152 qtask = new QueryTask10152(0, m, queryL[k], 100, dataset, querySet);
+//				qtask.start();
+//				resultArray.add(qtask.getResult());
+//			}
+//
+//			result = ResultUtil.handleResult(resultArray, 2, 3);
+//
+//			System.out.print("  " + ResultUtil.handleDouble(result, 4));
 
 			resultArray = new ArrayList<Double>();
 
@@ -265,7 +226,7 @@ public class MixTask
 			for (int j = 0; j < 9; j++)
 			{
 
-				MixTask qtask = new MixTask(1, m, queryLength, readRatio[k], dataset, querySet);
+				QueryTask10152 qtask = new QueryTask10152(1, m, queryL[k], 100, dataset, querySet);
 				qtask.start();
 				resultArray.add(qtask.getResult());
 			}
@@ -282,7 +243,7 @@ public class MixTask
 			for (int j = 0; j < 9; j++)
 			{
 
-				MixTask qtask = new MixTask(2, m, queryLength, readRatio[k], dataset, querySet);
+				QueryTask10152 qtask = new QueryTask10152(2, m, queryL[k], 100, dataset, querySet);
 				qtask.start();
 				resultArray.add(qtask.getResult());
 			}
@@ -294,45 +255,48 @@ public class MixTask
 			System.out.println();
 
 			Thread.sleep(1000);
-		}*/
+		}
 		
 		
 		// pbf-online
 		
 		System.out.println("===========beta-1-online, beta-2-online============");
-		for (int k = 0; k < readRatio.length; k++)
+		for (int k = 0; k < queryL.length; k++)
 		{
-			System.out.print(readRatio[k]);
-			ArrayList<Double> resultArray = new ArrayList<Double>();
-			double result = 0;
+			String queryFileName = "d:/dataset/1013/wc-qry-100000-new";
+			QuerySet querySet = new QuerySet(dataset.getLevelNum(), g, queryL[k]);
+			querySet.loadQueryFromFile(queryFileName);
 			
+			System.out.print(queryL[k]);
+			ArrayList<Double> resultArray = null;
+			double result = 0;
 			//============beta-1==============//
 			resultArray = new ArrayList<Double>();
-
-			for (int j = 0; j < 9; j++)
+			for (int j = 0; j < 7; j++)
 			{
 
-				MixTask qtask = new MixTask(3, m, queryLength, readRatio[k], dataset, querySet);
+				QueryTask10152 qtask = new QueryTask10152(3, m, queryL[k], 100, dataset, querySet);
 				qtask.start();
 				resultArray.add(qtask.getResult());
 			}
-			result = ResultUtil.handleResult(resultArray, 2, 3);
+			result = ResultUtil.handleResult(resultArray, 1, 2);
 
 			System.out.print("  " + ResultUtil.handleDouble(result, 4));
 
-			Thread.sleep(1000);
+//
+//			Thread.sleep(1000);
 
 			//============beta-2==============//
 			resultArray = new ArrayList<Double>();
-			for (int j = 0; j < 9; j++)
+			for (int j = 0; j < 7; j++)
 			{
 
-				MixTask qtask = new MixTask(4, m, queryLength, readRatio[k], dataset, querySet);
+				QueryTask10152 qtask = new QueryTask10152(4, m, queryL[k], 100, dataset, querySet);
 				qtask.start();
 				resultArray.add(qtask.getResult());
 			}
 
-			result = ResultUtil.handleResult(resultArray, 2, 3);
+			result = ResultUtil.handleResult(resultArray, 1, 2);
 
 			System.out.print("  " + ResultUtil.handleDouble(result, 4));
 

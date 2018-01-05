@@ -38,7 +38,7 @@ public class PbfUtil
 //			{
 //				absoluteAccuracy = 1E-30;
 //			}
-			absoluteAccuracy = 1E-9; // 93 for beta1, 54 for beta2
+			absoluteAccuracy = 1E-93; // 93 for beta1, 54 for beta2
 			optimizedM = new int[d.length];
 			LamdaFunction lamdaFunc = new LamdaFunction(m, d, f);
 			BisectionSolver solver = new BisectionSolver(absoluteAccuracy);
@@ -105,7 +105,7 @@ public class PbfUtil
 		{
 			double absoluteAccuracy = 0;
 
-			absoluteAccuracy = 1E-10; // 93 for beta1, 54 for beta2
+			absoluteAccuracy = 1E-53; // 93 for beta1, 54 for beta2
 			optimizedM = new int[d.length];
 			LamdaFunction lamdaFunc = new LamdaFunction(m, d, f);
 			BisectionSolver solver = new BisectionSolver(absoluteAccuracy);

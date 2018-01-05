@@ -15,8 +15,9 @@ import edu.ecnu.pbf.data.QuerySet;
 import edu.ecnu.pbf.data.TimepointSet;
 import edu.ecnu.pbf.util.OptimizationUtil;
 import edu.ecnu.pbf.util.PbfUtil;
+import edu.ecnu.pbf.util.ResultUtil;
 
-public class QueryTask
+public class QueryTask1015
 {
 	private int pbfType; // beta0, beta1, beta2
 	private int m;
@@ -27,7 +28,9 @@ public class QueryTask
 	private int queryNum;
 	private double fpRate;
 
-	public QueryTask(int pbfType, int m, int queryLength, Dataset dataset, QuerySet querySet)
+	private double result;
+
+	public QueryTask1015(int pbfType, int m, int queryLength, Dataset dataset, QuerySet querySet)
 	{
 		this.pbfType = pbfType;
 		this.m = m;
@@ -36,6 +39,16 @@ public class QueryTask
 		this.querySet = querySet;
 		this.queryNum = 0;
 		this.falseNum = 0;
+	}
+
+	public double getFPRate()
+	{
+		return fpRate;
+	}
+
+	public double getResult()
+	{
+		return result;
 	}
 
 	public void start()
@@ -68,6 +81,13 @@ public class QueryTask
 					querySet.getQueryFrequency(), queryLength);
 			int[] k = PbfUtil.getOptimizedKForBeta1(mm, dataset.getD(), CommonConstants.K_MAX);
 			pbf = new Beta1(mm, k, levelNum, 4);
+
+			int sumBits = 0;
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+			System.out.println("beta-1-opt, bits: " + sumBits);
 		}
 		else if (2 == pbfType)
 		{
@@ -88,6 +108,28 @@ public class QueryTask
 			int[] k = PbfUtil.getOptimizedKForBeta1(mm, d, CommonConstants.K_MAX);
 
 			pbf = new Beta2(mm, k, topLevel);
+			
+			int sumBits = 0;
+			for (int i = 0; i < mm.length; i++)
+			{
+				sumBits += mm[i];
+			}
+			System.out.println("beta-2-opt, bits: " + sumBits);
+		}
+		else if (3 == pbfType)
+		{
+			// beta-1
+			 int levelNum = Beta1.getLevelNum(dataset.getMaxTimestamp());
+			 int bitNum = 1200;
+			 System.out.println("the number of levels: " + levelNum);
+			 pbf = new Beta1(bitNum, levelNum, 4);
+		}
+		else if (4 == pbfType)
+		{
+			// beta-2
+			int levelNum = PbfUtil.getLevelNum(dataset.getMaxTimestamp());
+			int bitNum = m / levelNum;
+			pbf = new Beta2(bitNum, CommonConstants.K_MAX, levelNum - 1);
 		}
 
 		// insert temporal elements into pbf
@@ -104,7 +146,7 @@ public class QueryTask
 			{
 				pbf.insert(elementBytes, timeSet.get(i));
 				numOfInsertion++;
-			}	
+			}
 		}
 		long e = System.nanoTime();
 		System.out.println("number of insertion: " + numOfInsertion);
@@ -134,13 +176,15 @@ public class QueryTask
 		this.fpRate = (double) falseNum / this.queryNum;
 		System.out.println("fp number: " + this.falseNum);
 		System.out.println("fp rate: " + this.fpRate);
+
+		this.result = (double) (end - start) / 1000 / starttimeSet.size();
 	}
 
 	public static void main(String[] args) throws Exception
 	{
 		int g = 4;
-		int queryLength = 8192;
-		int pbfType = 0;
+		int queryLength = 1024;
+		int pbfType = 1;
 
 		String dataFileName = "d:/dataset/nw_dat";
 		Dataset dataset = new Dataset(g);
@@ -150,18 +194,24 @@ public class QueryTask
 		QuerySet querySet = new QuerySet(dataset.getLevelNum(), g, queryLength);
 		querySet.loadQueryFromFile(queryFileName);
 
-//		QueryTask qtask = new QueryTask(pbfType, 20000000, queryLength, dataset, querySet);
-//		qtask.start();
+		// QueryTask qtask = new QueryTask(pbfType, 20000000, queryLength,
+		// dataset, querySet);
+		// qtask.start();
 
-		Thread.sleep(12000);
-		for (int j = 0; j < 10; j++)
+//		Thread.sleep(12000);
+
+		ArrayList<Double> resultArray = new ArrayList<Double>();
+		for (int j = 0; j < 12; j++)
 		{
-			for (int i = 0; i < 1; i++)
-			{
-				QueryTask qtask = new QueryTask(pbfType, 50000000, queryLength, dataset, querySet);
-				qtask.start();
-			}
+			QueryTask1015 qtask = new QueryTask1015(pbfType, 50000000, queryLength, dataset,
+					querySet);
+			qtask.start();
+			resultArray.add(qtask.getResult());
 		}
+
+		double result = ResultUtil.handleResult(resultArray, 1, 1);
+
+		System.out.print("execution time: " + ResultUtil.handleDouble(result, 4));
 
 	}
 }

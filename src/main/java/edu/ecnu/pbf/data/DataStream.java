@@ -142,6 +142,62 @@ public class DataStream
 		
 	}
 	
+	/**
+	 * 1015
+	 * @param fileName
+	 * @param itemNum
+	 * @param lastTime
+	 */
+	public static void genQueryStartTimeBad(String fileName, int itemNum, int lastTime)
+	{
+		ArrayList<Integer> genTime = new ArrayList<Integer>();
+		int sum = 0;
+		while(true)
+		{
+			int randomTime = MathUtil.getRandomIndex(0, lastTime);
+			if (BinaryUtil2.getBinaryDecomposition(randomTime, randomTime + 127).size() > 8)
+			{
+				genTime.add(randomTime);
+				sum++;
+				if (sum >= itemNum)
+				{
+					break;
+				}
+			}
+		}
+		Collections.sort(genTime);
+		
+		FileWriter writer = null;
+		try
+		{
+			writer = new FileWriter(fileName, false);
+			// int recordNum = 2000000; // Integer.parseInt(args[1]);
+			for (int i = 0; i < genTime.size(); i++)
+			{
+				writer.append(genTime.get(i) + " " + (genTime.get(i) + 127));
+				writer.append("\r\n");
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			if (writer != null)
+			{
+				try
+				{
+					writer.close();
+				}
+				catch (IOException e1)
+				{
+				}
+			}
+		}
+		
+	}
+	
 	public static void genQueryStartTimeTrick(String fileName, int itemNum, int lastTime, int g)
 	{
 		ArrayList<Integer> genTime = new ArrayList<Integer>();
