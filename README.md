@@ -1,6 +1,6 @@
 # Persistent Bloom Filter #
 
-This project implements the PBF data structures described in the paper (Persistent Bloom Filter: Membership Testing for the Entire History)[http://www.cs.utah.edu/~lifeifei/papers/pbf.pdf].
+This project implements the PBF data structures described in the paper [Persistent Bloom Filter: Membership Testing for the Entire History](http://www.cs.utah.edu/~lifeifei/papers/pbf.pdf).
 
 ### Implemented data structures and algorithms ###
 
