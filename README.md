@@ -1,29 +1,21 @@
-# README #
+# Persistent Bloom Filter #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+This project implements the PBF data structures described in the paper (Persistent Bloom Filter: Membership Testing for the Entire History)[http://www.cs.utah.edu/~lifeifei/papers/pbf.pdf].
 
-### What is this repository for? ###
+### Implemented data structures and algorithms ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* Basic Bloom Filter
+* PBF-1
+* PBF-2
+* Bit Allocation Algorithm
+* Online Parameter Learning Algorithm
 
-### How do I get set up? ###
+### Build & Run ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+Requires Java 7 (or above)
 
-### Contribution guidelines ###
+### Contributor ###
 
-* Writing tests
-* Code review
-* Other guidelines
+* Jinwei Guo: guojinwei [at] stu [dot] ecnu [dot] edu [dot] cn
+* Yanqing Peng: ypeng [at] cs [dot] utah [dot] edu
 
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
